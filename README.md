@@ -109,4 +109,4 @@ Development of this reference prototype was assisted by AI coding tools. The con
 
 ## 13. License Status
 
-**License:** To be selected by the project owner before public release. No license should be inferred from the absence of a `LICENSE` file.
+**License:** MIT License. See [LICENSE](LICENSE).
