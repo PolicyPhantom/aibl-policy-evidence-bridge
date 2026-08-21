@@ -1,0 +1,44 @@
+scenario: {id: "06", name: Invalid Authority}
+evaluation_time: "2026-08-21T12:00:00Z"
+request:
+  request_id: req-006
+  request_type: ACTION
+  actor_id: sales-agent-01
+  action: transmit_customer_data
+  target: crm-alpha
+  purpose: customer-record-update
+  requested_at: "2026-08-21T12:00:00Z"
+  policy_ref: {policy_id: customer-data-policy, version: "1.0"}
+policy:
+  policy_id: customer-data-policy
+  version: "1.0"
+  source_ref: policy-source-001
+  status: APPROVED
+  approved_by_role: policy-owner
+  approved_at: "2026-08-20T09:00:00Z"
+  effective_from: "2026-08-20T00:00:00Z"
+  freshness: {authority_max_age_seconds: 3600, evidence_max_age_seconds: 3600}
+  rules:
+    - rule_id: customer-data-transfer
+      action: transmit_customer_data
+      destination: {evidence_type: destination_classification, allow_values: [approved_crm], deny_values: [prohibited], unknown_decision: HOLD}
+      required_operating_conditions: {secure_channel: true}
+      on_operating_condition_failure: DENY
+authority:
+  authority_id: auth-006
+  actor_id: sales-agent-01
+  scope: [transmit_customer_data]
+  status: INVALID
+  checked_at: "2026-08-21T11:59:50Z"
+  valid_until: "2026-08-21T13:00:00Z"
+  evidence_ref: authority-record-006
+evidence:
+  - {evidence_id: ev-006, type: destination_classification, subject: crm-alpha, value: approved_crm, observed_at: "2026-08-21T11:59:30Z", source: mock-registry}
+operating_conditions: {snapshot_id: ctx-006, observed_at: "2026-08-21T11:59:55Z", secure_channel: true, destination_available: true}
+operational_state: {state: RUNNING, changed_at: "2026-08-21T10:00:00Z", reason: normal_operation}
+expected:
+  decision: DENY
+  reason_codes: [AUTHORITY_INVALID]
+  required_conditions: []
+  execution_status: BLOCKED
+  final_operational_state: RUNNING

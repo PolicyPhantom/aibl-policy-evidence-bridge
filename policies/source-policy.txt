@@ -1,0 +1,7 @@
+AIBL Policy–Evidence Bridge demonstration policy
+
+Customer data may only be transmitted to approved CRM systems.
+Customer data transmission requires a secure channel; transmission must not proceed when the secure channel is unavailable.
+Encrypted audit logs may be stored in approved audit repositories.
+Requests involving an unknown destination require review before execution.
+Explicitly prohibited destinations must not receive customer data.

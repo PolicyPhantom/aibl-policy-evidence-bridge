@@ -1,0 +1,7 @@
+Decision dec-597f4d67b2ca at 2026-08-21T12:00:00Z
+Request: ACTION transmit_customer_data for target crm-alpha (request req-001).
+Policy: customer-data-policy v1.0; rules: customer-data-transfer.
+Authority: auth-001 status VALID checked at 2026-08-21T11:59:50Z.
+Evidence references: ev-001; context ctx-001: secure_channel=true, destination_available=true.
+Permission: ALLOW; required conditions: none; reasons: POLICY_APPROVED, AUTHORITY_VALID, DESTINATION_APPROVED, CONDITION_SATISFIED, CURRENT_CONTEXT_VALID.
+Execution: EXECUTED; operational state: RUNNING -> RUNNING.

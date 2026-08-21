@@ -1,0 +1,32 @@
+policy:
+  policy_id: customer-data-policy
+  version: "1.0"
+  source_ref: policy-source-001
+  status: APPROVED
+  approved_by_role: policy-owner
+  approved_at: "2026-08-20T09:00:00Z"
+  effective_from: "2026-08-20T00:00:00Z"
+  freshness:
+    authority_max_age_seconds: 3600
+    evidence_max_age_seconds: 3600
+  rules:
+    - rule_id: customer-data-transfer
+      action: transmit_customer_data
+      destination:
+        evidence_type: destination_classification
+        allow_values: [approved_crm]
+        deny_values: [prohibited]
+        unknown_decision: HOLD
+      required_operating_conditions:
+        secure_channel: true
+      on_operating_condition_failure: DENY
+    - rule_id: audit-log-storage
+      action: store_audit_log
+      destination:
+        evidence_type: destination_classification
+        allow_values: [approved_audit_repo]
+        unknown_decision: HOLD
+      required_restrictions:
+        - condition: encryption_enabled
+          required_value: true
+          restriction_code: ENCRYPTION_REQUIRED

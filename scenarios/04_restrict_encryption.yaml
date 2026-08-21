@@ -1,0 +1,48 @@
+scenario: {id: "04", name: Conditional Audit Transfer}
+evaluation_time: "2026-08-21T12:00:00Z"
+request:
+  request_id: req-004
+  request_type: ACTION
+  actor_id: audit-agent-01
+  action: store_audit_log
+  target: audit-repo-alpha
+  purpose: audit-retention
+  requested_at: "2026-08-21T12:00:00Z"
+  policy_ref: {policy_id: customer-data-policy, version: "1.0"}
+policy:
+  policy_id: customer-data-policy
+  version: "1.0"
+  source_ref: policy-source-001
+  status: APPROVED
+  approved_by_role: policy-owner
+  approved_at: "2026-08-20T09:00:00Z"
+  effective_from: "2026-08-20T00:00:00Z"
+  freshness: {authority_max_age_seconds: 3600, evidence_max_age_seconds: 3600}
+  rules:
+    - rule_id: audit-log-storage
+      action: store_audit_log
+      destination: {evidence_type: destination_classification, allow_values: [approved_audit_repo], unknown_decision: HOLD}
+      required_restrictions:
+        - {condition: encryption_enabled, required_value: true, restriction_code: ENCRYPTION_REQUIRED}
+authority:
+  authority_id: auth-004
+  actor_id: audit-agent-01
+  scope: [store_audit_log]
+  status: VALID
+  checked_at: "2026-08-21T11:59:50Z"
+  valid_until: "2026-08-21T13:00:00Z"
+  evidence_ref: authority-record-004
+evidence:
+  - {evidence_id: ev-004, type: destination_classification, subject: audit-repo-alpha, value: approved_audit_repo, observed_at: "2026-08-21T11:59:30Z", source: mock-registry}
+operating_conditions:
+  snapshot_id: ctx-004
+  observed_at: "2026-08-21T11:59:55Z"
+  encryption_available: true
+  encryption_enabled: true
+operational_state: {state: RUNNING, changed_at: "2026-08-21T10:00:00Z", reason: normal_operation}
+expected:
+  decision: RESTRICT
+  reason_codes: [CONDITION_SATISFIED]
+  required_conditions: [ENCRYPTION_REQUIRED]
+  execution_status: EXECUTED_WITH_RESTRICTIONS
+  final_operational_state: RUNNING
