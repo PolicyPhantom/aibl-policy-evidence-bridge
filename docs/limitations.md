@@ -19,4 +19,4 @@ Authority, evidence, destinations, operating conditions, execution, and operatio
 
 The executable policy has `effective_from` but no `effective_until` field or policy-expiry semantics in this prototype. Decision IDs use a 12-hex-character SHA-256 prefix; they are deterministic prototype identifiers, not audit-grade globally collision-resistant identifiers.
 
-Human and institutional responsibility remains outside the prototype. Before public release, the project owner must also select a license; the absence of a `LICENSE` file grants no implied license.
+Human and institutional responsibility remains outside the prototype. **License:** This repository is released under the MIT License. See the root `LICENSE` file.
