@@ -1,4 +1,4 @@
-"""Exactly the 12 frozen acceptance scenarios."""
+"""Exactly the 13 frozen v0.1.2 acceptance scenarios."""
 
 from __future__ import annotations
 
@@ -12,8 +12,8 @@ from src.execution import run_governed_request
 
 ROOT = Path(__file__).resolve().parents[1]
 SCENARIO_FILES = sorted((ROOT / "scenarios").glob("*.yaml"))
-if len(SCENARIO_FILES) != 12:
-    raise RuntimeError(f"Frozen scenario set must contain exactly 12 files, found {len(SCENARIO_FILES)}")
+if len(SCENARIO_FILES) != 13:
+    raise RuntimeError(f"Frozen scenario set must contain exactly 13 files, found {len(SCENARIO_FILES)}")
 
 
 @pytest.mark.parametrize("scenario_path", SCENARIO_FILES, ids=lambda path: path.stem)

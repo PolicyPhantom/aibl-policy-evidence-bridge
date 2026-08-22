@@ -1,4 +1,4 @@
-"""The single deterministic Permission Gate for v0.1.1."""
+"""The single deterministic Permission Gate for v0.1.2."""
 
 from __future__ import annotations
 
@@ -34,6 +34,15 @@ def evaluate_permission(permission_input: dict[str, Any]) -> PermissionDecision:
     """Evaluate current inputs; malformed inputs raise before returning a decision."""
     validate_permission_input(permission_input)
     request = permission_input["request"]
+
+    if (
+        request["request_type"] == "ACTION"
+        and permission_input["operational_state"]["state"] == "SUSPENDED"
+    ):
+        return PermissionDecision(
+            "HOLD", ("OPERATIONAL_STATE_SUSPENDED_REQUIRES_REENTRY",)
+        )
+
     policy = permission_input["policy"]
     authority = permission_input["authority"]
     evidence_records = permission_input["evidence"]

@@ -1,4 +1,4 @@
-"""Loading and validation for the frozen v0.1.1 executable policy shape."""
+"""Loading and validation for the frozen v0.1.2 executable policy shape."""
 
 from __future__ import annotations
 
@@ -29,7 +29,7 @@ def _require(mapping: dict[str, Any], fields: tuple[str, ...], label: str) -> No
 
 
 def validate_policy(policy: dict[str, Any]) -> None:
-    """Validate only the narrow executable policy schema frozen for v0.1.1."""
+    """Validate only the narrow executable policy schema frozen for v0.1.2."""
     if not isinstance(policy, dict):
         raise InputValidationError("policy must be a mapping")
     _require(

@@ -9,6 +9,7 @@
 - Historical ALLOW is not current permission. REENTRY always performs a fresh evaluation and creates a new receipt.
 - Hidden reasoning is not governance evidence. Decisions use only validated fields, controlled reason codes, and explicit references.
 - Execution requires a current Permission Gate decision. The normal execution interface contains no independent public mock-execute entry point.
+- A suspended operational state cannot authorize or execute a normal ACTION. Restoring action capability requires the REENTRY path.
 
 ## Mandatory invariants
 
@@ -22,6 +23,7 @@
 8. REENTRY requires fresh evaluation of current governance conditions.
 9. Permission Gate must not be bypassed by execution code.
 10. Invalid or malformed input fails before a permission decision and never defaults to ALLOW.
+11. A `SUSPENDED` operational state cannot authorize or execute a normal `ACTION`; restoration requires `REENTRY`.
 
 ## HOLD versus DENY
 
