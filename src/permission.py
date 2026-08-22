@@ -1,4 +1,4 @@
-"""The single deterministic Permission Gate for v0.1.2."""
+"""The single deterministic Permission Gate for v0.1.3."""
 
 from __future__ import annotations
 
@@ -41,6 +41,14 @@ def evaluate_permission(permission_input: dict[str, Any]) -> PermissionDecision:
     ):
         return PermissionDecision(
             "HOLD", ("OPERATIONAL_STATE_SUSPENDED_REQUIRES_REENTRY",)
+        )
+
+    if (
+        request["request_type"] == "REENTRY"
+        and permission_input["operational_state"]["state"] == "RUNNING"
+    ):
+        return PermissionDecision(
+            "HOLD", ("REENTRY_NOT_APPLICABLE_WHILE_RUNNING",)
         )
 
     policy = permission_input["policy"]

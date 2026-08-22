@@ -2,7 +2,7 @@
 
 This repository is a deterministic reference prototype for one small policy-to-execution boundary. It is not production-ready and does not establish legal compliance, safety, effectiveness, or empirical validity.
 
-v0.1.2 intentionally excludes:
+v0.1.3 intentionally excludes:
 
 - graphical UI or REST API;
 - database, cloud deployment, Docker, or Kubernetes;

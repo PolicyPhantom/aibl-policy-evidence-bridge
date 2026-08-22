@@ -4,7 +4,7 @@
 
 ## 1. What This Is
 
-This is the smallest deterministic implementation of the AIBL Policy-Evidence Bridge v0.1.2 boundary. It turns an explicitly approved executable policy, a request, and a current context snapshot into one of four permission decisions, performs only a mock execution outcome, and records a structured Decision Receipt that can be reconstructed for a human reader.
+This is the smallest deterministic implementation of the AIBL Policy-Evidence Bridge v0.1.3 boundary. It turns an explicitly approved executable policy, a request, and a current context snapshot into one of four permission decisions, performs only a mock execution outcome, and records a structured Decision Receipt that can be reconstructed for a human reader.
 
 The prototype keeps the natural-language policy in [`policies/source-policy.txt`](policies/source-policy.txt) separate from its pre-authored executable translation in [`policies/executable-policy.yaml`](policies/executable-policy.yaml). Translation alone does not authorize execution; approval remains explicit policy data.
 
@@ -60,7 +60,7 @@ Curated output is available in [`examples/sample_outputs/`](examples/sample_outp
 
 ## 7. Frozen Test Scenarios
 
-The v0.1.2 acceptance set contains exactly 13 fixtures in [`scenarios/`](scenarios/). It preserves the 12 frozen v0.1.1 outcomes and adds Scenario 13:
+The v0.1.3 acceptance set contains exactly 14 fixtures in [`scenarios/`](scenarios/). It preserves the 13 frozen v0.1.2 outcomes and adds Scenario 14:
 
 | # | Boundary | Decision | Execution |
 |---|---|---|---|
@@ -77,10 +77,11 @@ The v0.1.2 acceptance set contains exactly 13 fixtures in [`scenarios/`](scenari
 | 11 | Re-entry with historical ALLOW and stale current authority | HOLD | HELD |
 | 12 | Re-entry after fresh current revalidation | ALLOW | EXECUTED |
 | 13 | Suspended state with normal ACTION | HOLD | HELD |
+| 14 | Re-entry request while already running | HOLD | HELD |
 
 Run `python -m pytest -s tests/test_scenarios.py` to display expected-versus-actual lines for all frozen scenarios. Supplemental tests are kept separate in [`tests/test_invariants.py`](tests/test_invariants.py).
 
-The complete v0.1.2 suite contains 23 tests: 13 frozen acceptance scenarios and 10 preserved supplemental tests.
+The complete v0.1.3 suite contains 24 tests: 14 frozen acceptance scenarios and 10 preserved supplemental tests.
 
 ## 8. Decision Receipts and Reconstruction
 
@@ -90,11 +91,12 @@ The readable reconstruction is derived only from the receipt. It is a presentati
 
 ## 9. Re-entry Example
 
-Scenarios 11, 12, and 13 start from an already `SUSPENDED` state. The prototype does not detect suspension automatically.
+Scenarios 11, 12, and 13 start from an already `SUSPENDED` state; Scenario 14 starts from `RUNNING`. The prototype does not detect suspension automatically.
 
 - Scenario 11 keeps the state `SUSPENDED` because current authority is stale, even though a historical ALLOW is referenced.
 - Scenario 12 evaluates fresh current inputs, issues a new decision ID and receipt, executes, and changes the mock state to `RUNNING`.
 - Scenario 13 demonstrates that a normal `ACTION` cannot execute from `SUSPENDED`; it is held and the state remains `SUSPENDED` until the REENTRY path is used.
+- Scenario 14 demonstrates that `REENTRY` is not applicable while already `RUNNING`; it is held and the state remains `RUNNING`.
 
 The previous receipt is historical evidence only and is never reused as current authorization.
 
@@ -104,7 +106,7 @@ This is a narrow research implementation, not a legal or regulatory compliance d
 
 ## 11. Feedback Wanted
 
-Feedback is especially welcome on architecture boundaries, permission semantics, HOLD versus DENY behavior, authority and freshness assumptions, evidence reconstruction, re-entry semantics, and unrealistic implementation assumptions. Production-hardening suggestions are useful context but are outside the current v0.1.2 scope.
+Feedback is especially welcome on architecture boundaries, permission semantics, HOLD versus DENY behavior, authority and freshness assumptions, evidence reconstruction, re-entry semantics, and unrealistic implementation assumptions. Production-hardening suggestions are useful context but are outside the current v0.1.3 scope.
 
 ## 12. AI-Assisted Development Disclosure
 

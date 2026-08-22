@@ -24,6 +24,7 @@
 9. Permission Gate must not be bypassed by execution code.
 10. Invalid or malformed input fails before a permission decision and never defaults to ALLOW.
 11. A `SUSPENDED` operational state cannot authorize or execute a normal `ACTION`; restoration requires `REENTRY`.
+12. Request type and operational state must form a valid transition pair. A semantically incompatible pair must not silently proceed to normal permission evaluation.
 
 ## HOLD versus DENY
 
