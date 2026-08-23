@@ -55,6 +55,7 @@ However, one reachable combination of two already-existing inputs had not been e
 ```text
 Operational State = SUSPENDED
 Request Type      = ACTION
+```
 
 All predefined tests passed, but this state/request combination remained outside the tested semantic space.
 
