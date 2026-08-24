@@ -1,4 +1,6 @@
-# AIBL Policy-Evidence Bridge
+# AIBL Policy–Evidence Bridge
+
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.22073803.svg)](https://doi.org/10.5281/zenodo.22073803)
 
 > **This repository contains a reference prototype for research and demonstration purposes. It is not a production governance system.**
 
