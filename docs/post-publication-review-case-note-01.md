@@ -13,29 +13,39 @@
 
 This Case Note documents a governance-relevant implementation gap discovered after the initial public release of the **AIBL Policy–Evidence Bridge — Reference Prototype**, the subsequent correction process, and the design lessons that emerged from it.
 
-The prototype was originally designed to examine a narrow execution-governance bridge:
+### Prototype focus
+
+The prototype was designed to examine a narrow execution-governance bridge:
 
 > **Policy → Permission → Execution Decision → Evidence → Reconstruction**
 
-It was not intended to prove the correctness or completeness of AIBL, nor to provide production-ready governance infrastructure.
+It was **not** intended to prove the correctness or completeness of AIBL, nor to provide production-ready governance infrastructure.
+
+### Why this Case Note exists
 
 The post-publication correction history described here was **not a pre-designed experiment**. It emerged unexpectedly through adversarial review of the published prototype.
 
-Retrospectively, however, the correction process provides a useful worked example of a broader governance problem:
+Retrospectively, the correction process provides a useful worked example of a broader governance problem:
 
-> A system may pass all predefined tests while still containing an uncovered state combination that silently expands effective permission.
+> **A system may pass all predefined tests while still containing an uncovered state combination that silently expands effective permission.**
 
 ---
 
 ## 2. Initial Baseline — v0.1.1
 
+### Test baseline
+
 The initial public release, **v0.1.1**, passed all predefined tests:
 
-- 12 Frozen Acceptance Scenarios
-- 10 Supplemental Tests
-- **22 / 22 PASS**
+| Test set | Result |
+|---|---:|
+| Frozen Acceptance Scenarios | 12 / 12 PASS |
+| Supplemental Tests | 10 / 10 PASS |
+| **Total** | **22 / 22 PASS** |
 
-The prototype already enforced several explicit governance boundaries, including:
+### Governance boundaries already present
+
+The prototype already enforced several explicit governance boundaries:
 
 - `Capability ≠ Permission`
 - `Evidence ≠ Permission`
@@ -45,339 +55,382 @@ The prototype already enforced several explicit governance boundaries, including
 - Historical `ALLOW` does not automatically authorize current execution or re-entry
 - Execution requires a current Permission Gate decision
 
-The original re-entry scenarios tested:
+### Re-entry cases already tested
 
-- `SUSPENDED + REENTRY` with stale current authority → `HOLD`
-- `SUSPENDED + REENTRY` after fresh revalidation → `ALLOW`
+The original re-entry scenarios covered:
 
-However, one reachable combination of two already-existing inputs had not been explicitly specified or tested:
+| Operational State | Request | Current condition | Expected |
+|---|---|---|---|
+| `SUSPENDED` | `REENTRY` | stale current authority | `HOLD` |
+| `SUSPENDED` | `REENTRY` | fresh revalidation | `ALLOW` |
 
-```text
-Operational State = SUSPENDED
-Request Type      = ACTION
-```
+### The uncovered combination
 
-All predefined tests passed, but this state/request combination remained outside the tested semantic space.
+One reachable combination of two already-existing inputs had **not** been explicitly specified or tested:
 
-This distinction became important later:
+| Input | Value |
+|---|---|
+| Operational State | `SUSPENDED` |
+| Request Type | `ACTION` |
 
-Test success did not imply semantic completeness.
+All predefined tests passed, but this combination remained outside the tested semantic space.
 
-3. Unexpected Finding — Implicit Permission Expansion
+> **Test success did not imply semantic completeness.**
+
+---
+
+## 3. Unexpected Finding — Implicit Permission Expansion
 
 A post-publication adversarial review exercised the untested combination:
 
-SUSPENDED + ACTION
+| Input | Value |
+|---|---|
+| Operational State | `SUSPENDED` |
+| Request Type | `ACTION` |
 
-Using an otherwise valid request that would normally produce ALLOW, the prototype could produce:
+Despite the suspended state, an otherwise valid request could reach:
 
-Decision:          ALLOW
-Execution Result:   EXECUTED
-Operational State: SUSPENDED
+| Result | Observed behavior |
+|---|---|
+| Permission Decision | `ALLOW` |
+| Execution Result | `EXECUTED` |
+| Operational State | `SUSPENDED` |
 
-The problem was not that an explicit policy rule authorized execution from a suspended state.
+### Why this mattered
 
-The problem was that no state/request compatibility check existed at that boundary.
+No policy explicitly authorized execution from `SUSPENDED`.
 
-As a result, the normal permission-evaluation path remained reachable even though restoration of action capability from SUSPENDED was intended to occur through the explicit REENTRY path.
+The normal permission path remained reachable because **no compatibility rule existed for `SUSPENDED + ACTION`**.
 
-For the purposes of this Case Note, this behavior is described as an implicit permission expansion:
+For this Case Note, this behavior is described as **implicit permission expansion**:
 
-Execution became effectively available because the relevant governance boundary had not been defined, rather than because permission had been explicitly granted.
+> **Execution became effectively available because the relevant governance boundary had not been defined, rather than because permission had been explicitly granted.**
 
-The phrase implicit permission expansion is used here as descriptive language for this specific implementation finding. It is not introduced as a new formal AIBL risk category.
-
-The finding also demonstrated an important distinction between a wrong answer and a missing question.
+### Wrong answer vs. missing question
 
 The prototype had not answered a defined governance question incorrectly.
 
-Instead:
+> **The system did not give the wrong answer to a defined question.  
+> The question itself had not been defined for one reachable state/request combination.**
 
-The question itself had not been explicitly defined for one reachable combination of operational state and request type.
+*“Implicit permission expansion” is descriptive language used in this Case Note. It is not introduced as a formal AIBL risk category.*
 
-4. v0.1.2 Correction — Making the Missing Boundary Explicit
+---
 
-The first correction was released as v0.1.2.
+## 4. v0.1.2 — Closing the Suspended-Action Bypass
 
-Relevant commit:
+**Commit:** `183a4e6 Fix suspended action bypass in v0.1.2`
 
-183a4e6 Fix suspended action bypass in v0.1.2
+v0.1.2 made the previously missing boundary explicit.
 
-An explicit rule was introduced:
+### Before / after
 
-SUSPENDED + ACTION
-        ↓
-HOLD
+| | v0.1.1 | v0.1.2 |
+|---|---|---|
+| State / Request | `SUSPENDED + ACTION` | `SUSPENDED + ACTION` |
+| Decision | `ALLOW` possible | `HOLD` |
+| Execution | `EXECUTED` possible | `HELD` |
+| Final State | `SUSPENDED` | `SUSPENDED` |
+| Reason | No compatibility rule | `OPERATIONAL_STATE_SUSPENDED_REQUIRES_REENTRY` |
 
-with the reason code:
+The original twelve acceptance scenarios were preserved unchanged, and one new scenario was added.
 
-OPERATIONAL_STATE_SUSPENDED_REQUIRES_REENTRY
+> **Test status: 13 Acceptance Scenarios + 10 Supplemental Tests = 23 / 23 PASS**
 
-Expected behavior became:
+### What happened next
 
-Decision:          HOLD
-Execution Result:   HELD
-Operational State: SUSPENDED
+The correction closed the reported `SUSPENDED + ACTION` bypass.
 
-A new acceptance scenario was added while preserving the original twelve scenarios unchanged.
+The review then moved from the individual defect to the complete combination space:
 
-The test result after the correction was:
+> **`Request Type × Operational State`**
 
-13 Acceptance Scenarios
-10 Supplemental Tests
-23 / 23 PASS
+That second pass exposed another previously undefined combination:
 
-The v0.1.2 correction closed the reported SUSPENDED + ACTION bypass.
+> **`RUNNING + REENTRY`**
 
-After that correction, the same review method was applied more systematically by enumerating the full combination space of:
+This second issue was not simply an automatic consequence of the first code change. It was found by applying the same review method more systematically across the full 2 × 2 state/request space.
 
-Request Type × Operational State
+---
 
-That second review pass surfaced another previously undefined combination:
+## 5. v0.1.3 — Closing the Full State/Request Matrix
 
-RUNNING + REENTRY
+**Commit:** `d6886d1 Close re-entry state semantics in v0.1.3`
 
-The second issue was therefore not simply an automatic consequence of the first code change. It was identified by extending the review from the reported defect to the complete 2 × 2 state/request space.
+The second correction explicitly defined all four combinations.
 
-5. v0.1.3 — Closing the Full State/Request Matrix
+### State/request compatibility matrix
 
-The second correction made the full relationship between operational state and request type explicit.
+| Operational State | `ACTION` | `REENTRY` |
+|---|---|---|
+| `RUNNING` | Normal permission evaluation | `HOLD` — re-entry not applicable |
+| `SUSPENDED` | `HOLD` — re-entry required | Fresh re-entry evaluation |
 
-Relevant commit:
+### `RUNNING + REENTRY`
 
-d6886d1 Close re-entry state semantics in v0.1.3
+For `RUNNING + REENTRY`, the prototype now returns:
 
-The resulting compatibility matrix was:
+- **Decision:** `HOLD`
+- **Reason:** `REENTRY_NOT_APPLICABLE_WHILE_RUNNING`
+- **Execution:** `HELD`
+- **Operational State:** remains `RUNNING`
 
-Operational State	ACTION	REENTRY
-RUNNING	Normal permission evaluation	HOLD — re-entry not applicable
-SUSPENDED	HOLD — re-entry required	Fresh re-entry evaluation
+> **Test status: 14 Acceptance Scenarios + 10 Supplemental Tests = 24 / 24 PASS**
 
-For:
+All four `Request Type × Operational State` combinations were now explicitly defined.
 
-RUNNING + REENTRY
+### 5.1 An Open Question About `HOLD`
 
-the prototype now returns:
+The v0.1.3 correction revealed that `HOLD` is now used for two distinguishable situations:
 
-Decision: HOLD
-Reason:   REENTRY_NOT_APPLICABLE_WHILE_RUNNING
+| HOLD type | Meaning | Example recovery path |
+|---|---|---|
+| **Epistemic HOLD** | Information is missing, stale, ambiguous, or insufficient | Refresh evidence / authority |
+| **Applicability HOLD** | The request is not meaningful in the current operational state | Change request or operational state |
 
-The request is held because re-entry is not meaningful while the system is already in the RUNNING state.
+In the original scenarios, `HOLD` primarily represented insufficient or stale information.
 
-This is treated as HOLD, rather than DENY, because the underlying action is not necessarily prohibited. The request/state combination itself is semantically inapplicable.
+For `RUNNING + REENTRY`, the relevant information may be complete; the issue is that the requested transition is semantically inapplicable in the current state.
 
-After adding the final acceptance scenario:
+> **Open design question:** Should `HOLD` remain a unified governance state, or should different recovery paths be represented more explicitly?
 
-14 Acceptance Scenarios
-10 Supplemental Tests
-24 / 24 PASS
+This Case Note leaves that question unresolved.
 
-All four combinations of Request Type × Operational State were now explicitly defined.
+---
 
-5.1 An Open Question About HOLD
+## 6. What the Correction Process Revealed
 
-The v0.1.3 correction also introduced a distinction that this Case Note does not attempt to resolve.
+The post-publication correction process produced three broader observations.
 
-In the original prototype scenarios, HOLD primarily represented situations in which current information was insufficient, ambiguous, stale, or otherwise inadequate to justify either permission or prohibition.
+### 6.1 Test Success Is Not Semantic Completeness
 
-For RUNNING + REENTRY, however, the relevant information may be complete. The reason for HOLD is instead that the requested transition is semantically inapplicable in the current operational state.
+v0.1.1 passed **22 / 22 predefined tests**.
 
-The prototype therefore now uses HOLD for at least two distinguishable situations:
+The implementation gap nevertheless remained reachable because the relevant state/request combination had not been represented in the original test space.
 
-Epistemic HOLD — the system lacks sufficiently current or complete information to make a defensible permission decision.
-Applicability HOLD — the request/state combination itself is not meaningful for normal permission evaluation.
+> **Passing all specified tests does not establish that the specification itself is complete.**
 
-Whether these situations should remain under a single HOLD state or be distinguished more explicitly is left as an open design question for future work.
+The defect was not hidden inside a failing requirement. It existed outside the boundary of what had been explicitly specified and tested.
 
-The v0.1.3 implementation should therefore be understood as making the state/request matrix explicit, not as resolving every semantic question created by that matrix.
+### 6.2 Undefined Governance Semantics Can Have Executable Consequences
 
-6. What the Correction Process Revealed
-6.1 Test Success Is Not Semantic Completeness
+The original implementation contained no explicit rule authorizing normal execution while the system was `SUSPENDED`.
 
-v0.1.1 passed 22 / 22 predefined tests.
+Yet the absence of a compatibility check allowed the ordinary permission path to remain reachable.
 
-The implementation gap nevertheless remained reachable because the relevant state combination had not been represented in the original test space.
+> **Absence of an explicit authorization boundary may have executable consequences.**
 
-This demonstrates a familiar but important distinction:
+If an undefined state/request combination silently falls through to an execution-capable path, missing governance semantics may become effective permission in practice.
 
-Passing all specified tests does not establish that the specification itself is complete.
+**Interpretation:** this was not simply a software branching error. It was a **governance-boundary error expressed through software**.
 
-The defect was not hidden inside a failing requirement.
+### 6.3 Transition Semantics Are Part of the Permission Boundary
 
-It existed outside the boundary of what had been explicitly asked.
+Runtime permission cannot always be determined solely from:
 
-6.2 Undefined Governance States Can Behave Like Permission
+- actor
+- requested action
+- policy
+- current authority
+- evidence
+- operating conditions
 
-The original implementation contained no explicit rule authorizing normal execution while suspended.
+The meaning of a request may also depend on the system's current operational state.
 
-Yet the absence of a compatibility check allowed the ordinary permission path to proceed.
+For example:
 
-In operational governance, therefore:
-
-Absence of an explicit authorization boundary may have executable consequences.
-
-If an undefined state silently falls through to an execution-capable path, missing governance semantics may become effective permission in practice.
-
-The issue was therefore not simply a software branching error.
-
-It was a governance-boundary error expressed through software.
-
-6.3 Transition Semantics Are Part of the Permission Boundary
-
-The correction process also showed that runtime permission cannot always be determined solely by examining:
-
-actor
-requested action
-policy
-current authority
-evidence
-operating conditions
-
-The meaning of the request may also depend on the system's current operational state.
-
-For example, REENTRY has a meaningful governance role when the system is SUSPENDED, but not when it is already RUNNING.
-
-The valid relationship between state and requested transition therefore forms part of the runtime governance boundary itself.
+| Request | State | Meaning |
+|---|---|---|
+| `REENTRY` | `SUSPENDED` | Meaningful governance transition |
+| `REENTRY` | `RUNNING` | Semantically inapplicable |
 
 This led to an additional design invariant:
 
-Request type and operational state must form a valid transition pair. A semantically incompatible pair must not silently proceed to normal permission evaluation.
+> **Request type and operational state must form a valid transition pair. A semantically incompatible pair must not silently proceed to normal permission evaluation.**
 
-7. Relationship to the Prototype's Design Principles
+---
 
-The correction history was not intentionally constructed as an AIBL demonstration.
+## 7. Relationship to the Prototype's Design Principles
 
-However, retrospectively, it resembles the same design concern already present in the prototype:
+### What this does *not* show
 
-Missing, ambiguous, stale, or otherwise unresolved governance conditions should not silently become ALLOW.
+The correction history was **not intentionally constructed as an AIBL demonstration**.
 
-The v0.1.1 design already applied that principle to matters such as policy approval, authority freshness, evidence freshness, and unknown destinations.
+It does not show that the development process “proved” AIBL.
 
-The post-publication findings showed that an analogous problem could also occur at the level of state/request compatibility.
+### What it does resemble
 
-In v0.1.1, the SUSPENDED + ACTION combination had no explicit interpretation.
+Retrospectively, the correction history resembles a design concern already present in the prototype:
 
-Because the missing interpretation did not produce an explicit non-execution state, the ordinary execution path remained available.
+> **Missing, ambiguous, stale, or otherwise unresolved governance conditions should not silently become `ALLOW`.**
 
-The later versions changed this from an implicit outcome into an explicit governance decision:
+The v0.1.1 design already applied this principle to:
 
-Undefined compatibility
-        ↓
-Explicit evaluation
-        ↓
-HOLD + inspectable reason code
+- policy approval
+- authority freshness
+- evidence freshness
+- unknown destinations
 
-The value of this observation is not that the development process "proved" AIBL.
+The post-publication findings showed that an analogous problem could also occur at the level of **state/request compatibility**.
 
-Rather:
+### Before the correction
 
-A post-publication implementation defect happened to reproduce, at the development-process level, a structurally similar ambiguity to the kind of ambiguity the prototype was intended to expose at runtime.
+`SUSPENDED + ACTION` had no explicit interpretation.
 
-That interpretation is retrospective and should be treated as such.
+Because the missing interpretation did not produce an explicit non-execution state, the ordinary permission path remained available.
 
-8. Review Method Note
+### After the correction
 
-The initial defect was identified through an AI-assisted adversarial review that included executable reproduction, rather than textual code inspection alone.
+| Stage | Outcome |
+|---|---|
+| Undefined compatibility | No explicit state/request rule |
+| Explicit evaluation | Compatibility checked |
+| Governance result | `HOLD` + inspectable reason code |
 
-The AI-assisted review did more than identify the defect.
+### Retrospective interpretation
 
-It also generated specific candidate resolutions, including proposed semantics and reason-code naming.
+> **A post-publication implementation defect happened to reproduce, at the development-process level, a structurally similar ambiguity to the kind of ambiguity the prototype was intended to expose at runtime.**
 
-For the later RUNNING + REENTRY finding, the reviewer identified the untested state/request combination and proposed alternative treatments rather than only reporting that the case was undefined.
+This interpretation is retrospective and should be treated as such.
+
+---
+
+## 8. Review Method Note
+
+The initial defect was identified through an **AI-assisted adversarial review that included executable reproduction**, rather than textual code inspection alone.
+
+### What the AI-assisted review contributed
+
+The review did more than identify the defect. It also generated specific **candidate resolutions**, including:
+
+- proposed semantics
+- reason-code naming
+- alternative treatments for the remaining undefined state/request combination
+
+For the later `RUNNING + REENTRY` finding, the reviewer identified the untested combination and proposed alternative treatments rather than only reporting that the case was undefined.
 
 Other AI-assisted discussion also contributed to evaluating those alternatives and their governance meaning.
 
-The project owner did not independently originate every correction or semantic option described in this Case Note.
+### Division of roles
 
-Instead, the process was closer to:
+The project owner did **not** independently originate every correction or semantic option described in this Case Note.
 
-Observed implementation behavior
-        ↓
-AI-assisted defect discovery
-        ↓
-AI-generated candidate interpretation / correction
-        ↓
-Project-side evaluation
-        ↓
-Human acceptance or rejection
-        ↓
-Implementation
-        ↓
-Executable testing
-        ↓
-Commit / versioned specification
+The actual process was closer to:
+
+| Stage | Role |
+|---|---|
+| Observed implementation behavior | Existing prototype |
+| Defect discovery | AI-assisted adversarial review |
+| Candidate interpretation / correction | AI-assisted proposal generation |
+| Semantic evaluation | Project-side review |
+| Acceptance authority | Human project owner |
+| Implementation | Coding workflow |
+| Verification | Executable tests and re-review |
+| Record | Git commit and versioned specification |
+
+### Candidate proposal vs. specification authority
 
 The project owner retained final acceptance authority over whether a proposed interpretation or correction would become part of the prototype.
 
-A candidate proposal therefore did not acquire specification authority merely because an AI reviewer generated it.
+A candidate proposal did **not** acquire specification authority merely because an AI reviewer generated it.
 
-It had to be evaluated, accepted, implemented, tested, and incorporated into the versioned project.
+It had to be:
+
+1. evaluated;
+2. accepted or rejected;
+3. implemented;
+4. tested; and
+5. incorporated into the versioned project.
 
 Retrospectively, this creates a small parallel with another principle already present in the prototype:
 
-Candidate ≠ Approved
+> **Candidate ≠ Approved**
 
-This parallel was not intentionally designed into the review process and should not be interpreted as a planned governance experiment.
+This parallel was **not intentionally designed into the review process** and should not be interpreted as a planned governance experiment.
+
+### Methodological boundary
 
 AI-assisted review functioned here as both:
 
-a defect-discovery mechanism; and
-a source of candidate resolutions.
+- a defect-discovery mechanism; and
+- a source of candidate resolutions.
 
-It should not be interpreted as independent assurance, certification, or proof of correctness.
+It should **not** be interpreted as:
+
+- independent assurance;
+- certification;
+- proof of correctness; or
+- a substitute for independent human review.
 
 Likewise, the use of multiple AI systems may expose different assumptions or reviewer blind spots, but it does not by itself establish reviewer independence or eliminate the possibility of correlated model failure.
 
-9. Case Summary
+---
 
-The correction history can be summarized as:
+## 9. Case Summary
 
-v0.1.1
-22 / 22 PASS
-        ↓
-Untested SUSPENDED × ACTION combination discovered
-        ↓
-Implicit execution path reproduced
-        ↓
-v0.1.2
-SUSPENDED + ACTION → HOLD
-23 / 23 PASS
-        ↓
-Full Request Type × Operational State space enumerated
-        ↓
-RUNNING × REENTRY found undefined
-        ↓
-Full 2 × 2 compatibility matrix defined
-        ↓
-v0.1.3
-24 / 24 PASS
+### Correction timeline
 
-The central lesson is:
+| Version | Observation / Change | Test Status |
+|---|---|---:|
+| **v0.1.1** | Original public baseline | **22 / 22 PASS** |
+|  | `SUSPENDED × ACTION` found undefined |  |
+|  | Implicit execution path reproduced |  |
+| **v0.1.2** | `SUSPENDED + ACTION → HOLD` | **23 / 23 PASS** |
+|  | Full `Request Type × Operational State` space enumerated |  |
+|  | `RUNNING × REENTRY` found undefined |  |
+| **v0.1.3** | Full 2 × 2 compatibility matrix defined | **24 / 24 PASS** |
 
-The important failure was not that the system chose the wrong answer to a defined question. The question itself had not been defined for one reachable combination of state and request.
+### Central lesson
 
-For governance-oriented systems, this suggests that review should examine not only whether expected cases return expected decisions, but also whether relevant combinations of state, request, authority, evidence, and transition semantics have been explicitly defined.
+> **The important failure was not that the system chose the wrong answer to a defined question. The question itself had not been defined for one reachable combination of state and request.**
 
-A second lesson emerged from the review process itself:
+For governance-oriented systems, review should examine not only whether expected cases return expected decisions, but also whether relevant combinations of:
 
-A proposed correction can be technically plausible without yet being authoritative.
+- state
+- request
+- authority
+- evidence
+- transition semantics
+
+have been explicitly defined.
+
+### Second lesson
+
+> **A proposed correction can be technically plausible without yet being authoritative.**
 
 Candidate resolutions still require explicit evaluation and acceptance before they become part of the governed specification.
 
-10. Scope Boundary
+---
 
-This Case Note does not establish:
+## 10. Scope Boundary
 
-production readiness;
-system safety;
-legal or regulatory compliance;
-completeness of the AIBL framework;
-completeness of the prototype's remaining state space;
-effectiveness of AI-assisted review as an assurance method;
-independence of multiple AI reviewers;
-superiority of the prototype over existing authorization, policy, IAM, or runtime-control systems; or
-that the post-publication correction process was an intentionally designed AIBL experiment.
+### What this Case Note documents
 
-It documents one concrete implementation finding, the review path that exposed it, and the governance semantics introduced to address it.
+This Case Note documents:
 
-The prototype remains a small reference implementation intended to make assumptions inspectable, executable, testable, and open to criticism.
+- one concrete implementation finding;
+- the review path that exposed it; and
+- the governance semantics introduced to address it.
+
+### What it does *not* establish
+
+This Case Note does **not** establish:
+
+- production readiness;
+- system safety;
+- legal or regulatory compliance;
+- completeness of the AIBL framework;
+- completeness of the prototype's remaining state space;
+- effectiveness of AI-assisted review as an assurance method;
+- independence of multiple AI reviewers;
+- superiority of the prototype over existing authorization, policy, IAM, or runtime-control systems; or
+- that the post-publication correction process was an intentionally designed AIBL experiment.
+
+### Prototype status
+
+The prototype remains a small reference implementation intended to make assumptions:
+
+- **inspectable**
+- **executable**
+- **testable**
+- **open to criticism**
